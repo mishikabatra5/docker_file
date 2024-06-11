@@ -15,16 +15,16 @@ jobs:
       
       - name: Build Docker image
         run: |
-          docker build -t my-nginx-image .
+          docker build -t my-image .
       
       - name: Log in to Docker Hub
         run: echo "${{ secrets.DOCKER_HUB_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_HUB_USERNAME }}" --password-stdin
       
       - name: Tag Docker image
-        run: docker tag my-nginx-image:latest ${{ secrets.DOCKER_HUB_USERNAME }}/my-nginx-image:latest
+        run: docker tag my-image:latest ${{ secrets.DOCKER_HUB_USERNAME }}/my-image:latest
       
       - name: Push Docker image to Docker Hub
-        run: docker push ${{ secrets.DOCKER_HUB_USERNAME }}/my-nginx-image:latest
+        run: docker push ${{ secrets.DOCKER_HUB_USERNAME }}/my-image:latest
       
       - name: Deploy to EC2
         env:
