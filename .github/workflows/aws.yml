@@ -1,44 +1,43 @@
-name: Docker Image CI
+name: Deploy to EC2
 
 on:
   push:
-    branches: [ "main" ]
-  pull_request:
-    branches: [ "main" ]
+    branches:
+      - main
 
 jobs:
-  build_and_deploy:
+  deploy:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v4
-
-    - name: Log in to Docker Hub
-      run: echo "${{ secrets.DOCKER_HUB_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_HUB_USERNAME }}" --password-stdin
-
-    - name: Build the Docker image
-      run: |
-        SHA_SHORT=$(echo "${{ github.sha }}" | cut -c1-5)
-        TAG_NAME=mishikabatra/my-image:${SHA_SHORT}-${{ github.run_number }}
-        docker build . --file Dockerfile --tag $TAG_NAME
-
-    - name: Push the Docker image to Docker Hub
-      run: |
-        SHA_SHORT=$(echo "${{ github.sha }}" | cut -c1-5)
-        IMAGE_NAME=mishikabatra/my-image:${SHA_SHORT}-${{ github.run_number }}
-        docker push $IMAGE_NAME
-
-    - name: SSH into EC2 instance and deploy
-      uses: appleboy/ssh-action@master
-      with:
-        host: ${{ secrets.EC2_HOST }}
-        username: ${{ secrets.EC2_USER }}
-        key: ${{ secrets.EC2_SSH_KEY }}
-        script: |
-          docker login -u "${{ secrets.DOCKER_HUB_USERNAME }}" -p "${{ secrets.DOCKER_HUB_PASSWORD }}"
-          SHA_SHORT=$(echo "${{ github.sha }}" | cut -c1-5)
-          IMAGE_NAME=mishikabatra/my-image:${SHA_SHORT}-${{ github.run_number }}
-          docker pull $IMAGE_NAME
-          docker stop my-container || true
-          docker rm my-container || true
-          docker run -d -p 80:80 --name my-container $IMAGE_NAME
+      - name: Checkout repository
+        uses: actions/checkout@v2
+      
+      - name: Build Docker image
+        run: |
+          docker build -t my-nginx-image .
+      
+      - name: Log in to Docker Hub
+        run: echo "${{ secrets.DOCKER_HUB_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_HUB_USERNAME }}" --password-stdin
+      
+      - name: Tag Docker image
+        run: docker tag my-nginx-image:latest ${{ secrets.DOCKER_HUB_USERNAME }}/my-nginx-image:latest
+      
+      - name: Push Docker image to Docker Hub
+        run: docker push ${{ secrets.DOCKER_HUB_USERNAME }}/my-nginx-image:latest
+      
+      - name: Deploy to EC2
+        env:
+          AWS_EC2_HOST: ${{ secrets.EC2_HOST }}
+          AWS_EC2_USER: ${{ secrets.EC2_USER }}
+          AWS_EC2_KEY: ${{ secrets.EC2_SSH_KEY }}
+        run: |
+          echo "$AWS_EC2_KEY" > ec2_key.pem
+          chmod 600 ec2_key.pem
+          ssh -o StrictHostKeyChecking=no -i ec2_key.pem $AWS_EC2_USER@$AWS_EC2_HOST << EOF
+            docker login -u "${{ secrets.DOCKER_HUB_USERNAME }}" -p "${{ secrets.DOCKER_HUB_PASSWORD }}"
+            docker pull ${{ secrets.DOCKER_HUB_USERNAME }}/my-nginx-image:latest
+            docker stop my-nginx-container || true
+            docker rm my-nginx-container || true
+            docker run -d --name my-nginx-container -p 80:80 ${{ secrets.DOCKER_HUB_USERNAME }}/my-nginx-image:latest
+          EOF
