@@ -1,4 +1,4 @@
-name: Deploy to EC2
+name: Deploy to EC2 with Docker Compose
 
 on:
   push:
@@ -6,26 +6,28 @@ on:
       - main
 
 jobs:
-  deploy:
+  build_and_deploy:
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
-      
-      - name: Build Docker image
-        run: |
-          sudo docker build -t my-image .
-      
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v1
+
       - name: Log in to Docker Hub
-        run: echo "${{ secrets.DOCKER_HUB_PASSWORD }}" | sudo docker login -u "${{ secrets.DOCKER_HUB_USERNAME }}" --password-stdin
-      
-      - name: Tag Docker image
-        run: sudo docker tag my-image:latest ${{ secrets.DOCKER_HUB_USERNAME }}/my-image:latest
-      
-      - name: Push Docker image to Docker Hub
-        run: sudo docker push ${{ secrets.DOCKER_HUB_USERNAME }}/my-image:latest
-      
+        run: echo "${{ secrets.DOCKER_HUB_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_HUB_USERNAME }}" --password-stdin
+
+      - name: Build and push Docker image
+        run: |
+          SHA_SHORT=$(echo "${{ github.sha }}" | cut -c1-5)
+          IMAGE_NAME=mishikabatra/my-image:${SHA_SHORT}-${{ github.run_number }}
+          docker build . --file Dockerfile --tag $IMAGE_NAME
+          docker tag $IMAGE_NAME mishikabatra/my-image:latest
+          docker push $IMAGE_NAME
+          docker push mishikabatra/my-image:latest
+
       - name: Deploy to EC2
         env:
           AWS_EC2_HOST: ${{ secrets.EC2_HOST }}
@@ -34,10 +36,10 @@ jobs:
         run: |
           echo "$AWS_EC2_KEY" > ec2_key.pem
           chmod 600 ec2_key.pem
+          scp -o StrictHostKeyChecking=no -i ec2_key.pem docker-compose.yml $AWS_EC2_USER@$AWS_EC2_HOST:~/docker-compose.yml
           ssh -o StrictHostKeyChecking=no -i ec2_key.pem $AWS_EC2_USER@$AWS_EC2_HOST << EOF
             sudo docker login -u "${{ secrets.DOCKER_HUB_USERNAME }}" -p "${{ secrets.DOCKER_HUB_PASSWORD }}"
-            sudo docker pull ${{ secrets.DOCKER_HUB_USERNAME }}/my-image:latest
-            sudo docker stop my-nginx-container || true
-            sudo docker rm my-nginx-container || true
-            sudo docker run -d --name my-nginx-container -p 80:80 ${{ secrets.DOCKER_HUB_USERNAME }}/my-image:latest
+            sudo docker-compose -f ~/docker-compose.yml pull
+            sudo docker-compose -f ~/docker-compose.yml down
+            sudo docker-compose -f ~/docker-compose.yml up -d
           EOF
