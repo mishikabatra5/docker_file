@@ -7,7 +7,7 @@ on:
     branches: [ "main" ]
 
 jobs:
-  build:
+  build_and_deploy:
     runs-on: ubuntu-latest
 
     steps:
@@ -19,12 +19,26 @@ jobs:
     - name: Build the Docker image
       run: |
         SHA_SHORT=$(echo "${{ github.sha }}" | cut -c1-5)
-        TAG_NAME=my-image:${SHA_SHORT}-${{ github.run_number }}
+        TAG_NAME=mishikabatra/my-image:${SHA_SHORT}-${{ github.run_number }}
         docker build . --file Dockerfile --tag $TAG_NAME
 
-    - name: Tag and push the Docker image
+    - name: Push the Docker image to Docker Hub
       run: |
         SHA_SHORT=$(echo "${{ github.sha }}" | cut -c1-5)
-        IMAGE_NAME=my-image:${SHA_SHORT}-${{ github.run_number }}
-        docker tag $IMAGE_NAME mishikabatra/$IMAGE_NAME
-        docker push mishikabatra/$IMAGE_NAME
+        IMAGE_NAME=mishikabatra/my-image:${SHA_SHORT}-${{ github.run_number }}
+        docker push $IMAGE_NAME
+
+    - name: SSH into EC2 instance and deploy
+      uses: appleboy/ssh-action@master
+      with:
+        host: ${{ secrets.EC2_HOST }}
+        username: ${{ secrets.EC2_USER }}
+        key: ${{ secrets.EC2_SSH_KEY }}
+        script: |
+          docker login -u "${{ secrets.DOCKER_HUB_USERNAME }}" -p "${{ secrets.DOCKER_HUB_PASSWORD }}"
+          SHA_SHORT=$(echo "${{ github.sha }}" | cut -c1-5)
+          IMAGE_NAME=mishikabatra/my-image:${SHA_SHORT}-${{ github.run_number }}
+          docker pull $IMAGE_NAME
+          docker stop my-container || true
+          docker rm my-container || true
+          docker run -d -p 80:80 --name my-container $IMAGE_NAME
