@@ -1,5 +1,8 @@
-#mishika
-#Basic nginx
-FROM ubuntu:20.04
-RUN apt-get -y update
-RUN apt-get -y install nginx
+# Use the official Nginx image as the base image
+FROM nginx:latest
+
+# Expose port 80
+EXPOSE 80
+
+# Start Nginx when the container starts
+CMD ["nginx", "-g", "daemon off;"]
