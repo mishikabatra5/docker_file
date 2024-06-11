@@ -15,16 +15,16 @@ jobs:
       
       - name: Build Docker image
         run: |
-          docker build -t my-image .
+          sudo docker build -t my-image .
       
       - name: Log in to Docker Hub
-        run: echo "${{ secrets.DOCKER_HUB_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_HUB_USERNAME }}" --password-stdin
+        run: echo "${{ secrets.DOCKER_HUB_PASSWORD }}" | sudo docker login -u "${{ secrets.DOCKER_HUB_USERNAME }}" --password-stdin
       
       - name: Tag Docker image
-        run: docker tag my-image:latest ${{ secrets.DOCKER_HUB_USERNAME }}/my-image:latest
+        run: sudo docker tag my-image:latest ${{ secrets.DOCKER_HUB_USERNAME }}/my-image:latest
       
       - name: Push Docker image to Docker Hub
-        run: docker push ${{ secrets.DOCKER_HUB_USERNAME }}/my-image:latest
+        run: sudo docker push ${{ secrets.DOCKER_HUB_USERNAME }}/my-image:latest
       
       - name: Deploy to EC2
         env:
@@ -35,9 +35,9 @@ jobs:
           echo "$AWS_EC2_KEY" > ec2_key.pem
           chmod 600 ec2_key.pem
           ssh -o StrictHostKeyChecking=no -i ec2_key.pem $AWS_EC2_USER@$AWS_EC2_HOST << EOF
-            docker login -u "${{ secrets.DOCKER_HUB_USERNAME }}" -p "${{ secrets.DOCKER_HUB_PASSWORD }}"
-            docker pull ${{ secrets.DOCKER_HUB_USERNAME }}/my-image:latest
-            docker stop my-nginx-container || true
-            docker rm my-nginx-container || true
-            docker run -d --name my-nginx-container -p 80:80 ${{ secrets.DOCKER_HUB_USERNAME }}/my-nginx-image:latest
+            sudo docker login -u "${{ secrets.DOCKER_HUB_USERNAME }}" -p "${{ secrets.DOCKER_HUB_PASSWORD }}"
+            sudo docker pull ${{ secrets.DOCKER_HUB_USERNAME }}/my-image:latest
+            sudo docker stop my-nginx-container || true
+            sudo docker rm my-nginx-container || true
+            sudo docker run -d --name my-nginx-container -p 80:80 ${{ secrets.DOCKER_HUB_USERNAME }}/my-nginx-image:latest
           EOF 
