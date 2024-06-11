@@ -18,13 +18,13 @@ jobs:
 
     - name: Build the Docker image
       run: |
-        SHA_SHORT=$(echo "${{ github.sha }}" | cut -c1-7)
+        SHA_SHORT=$(echo "${{ github.sha }}" | cut -c1-5)
         TAG_NAME=my-image:${SHA_SHORT}-${{ github.run_number }}
         docker build . --file Dockerfile --tag $TAG_NAME
 
     - name: Tag and push the Docker image
       run: |
-        SHA_SHORT=$(echo "${{ github.sha }}" | cut -c1-7)
+        SHA_SHORT=$(echo "${{ github.sha }}" | cut -c1-5)
         IMAGE_NAME=my-image:${SHA_SHORT}-${{ github.run_number }}
         docker tag $IMAGE_NAME mishikabatra/$IMAGE_NAME
         docker push mishikabatra/$IMAGE_NAME
