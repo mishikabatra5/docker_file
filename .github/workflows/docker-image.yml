@@ -18,8 +18,8 @@ jobs:
 
     - name: Build and push Docker image
       run: |
-        docker build -t ${{ secrets.mishika }}/my-docker-image:latest .
-        docker push ${{ secrets.mishika }}/my-docker-image:latest
+        docker build -t ${{ secrets.mishika }}/docker-image:latest .
+        docker push ${{ secrets.mishika }}/docker-image:latest
       env:
         DOCKER_USERNAME: ${{ secrets.mishika }}
         DOCKER_PASSWORD: ${{ secrets.a }}
