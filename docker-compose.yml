@@ -3,6 +3,6 @@ services:
   web:
     image: mishikabatra/my-image:latest
     ports:
-      - "9090:80"
+      - "8080:80"
     volumes:
       - /var/app/config:/config
