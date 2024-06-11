@@ -21,6 +21,6 @@ jobs:
 
     - name: Tag and push the Docker image
       run: |
-        IMAGE_NAME=my-image:${{ github.sha }}
+        IMAGE_NAME=my-image:main
         docker tag $IMAGE_NAME mishikabatra/$IMAGE_NAME
         docker push mishikabatra/$IMAGE_NAME
