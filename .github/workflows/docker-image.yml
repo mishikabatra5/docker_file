@@ -1,25 +1,26 @@
-name: Build and Push Docker Image
+name: Docker Image CI
 
 on:
   push:
-    branches:
-      - main  # Change this to your main branch name
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
 
 jobs:
   build:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v2
+    - uses: actions/checkout@v4
 
-    - name: Login to Docker Hub
-      run: echo "${shrutibatra}" | docker login -u "${mishikabatra}" --password-stdin
+    - name: Log in to Docker Hub
+      run: echo "${{ secrets.DOCKER_HUB_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_HUB_USERNAME }}" --password-stdin
 
-    - name: Build and push Docker image
+    - name: Build the Docker image
+      run: docker build . --file Dockerfile --tag my-image:${{ github.sha }}
+
+    - name: Tag and push the Docker image
       run: |
-        docker build -t ${{ secrets.mishika }}/docker-image:latest .
-        docker push ${{ secrets.mishika }}/docker-image:latest
-      env:
-        DOCKER_USERNAME: ${{ secrets.mishika }}
-        DOCKER_PASSWORD: ${{ secrets.a }}
+        IMAGE_NAME=my-image:${{ github.sha }}
+        docker tag $IMAGE_NAME mishikabatra/$IMAGE_NAME
+        docker push mishikabatra/$IMAGE_NAME
