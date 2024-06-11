@@ -1,27 +1,52 @@
-name: Deploy to EC2
+name: Deploy to EC2 with Docker Compose
 
 on:
   push:
-    branches: [main]
+    branches:
+      - main
 
 jobs:
-  deploy:
+  build_and_deploy:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v2
+      - name: Checkout repository
+        uses: actions/checkout@v2
 
-    - name: Build and push Docker image
-      # Add steps to build and push your Docker image to Docker Hub
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v1
 
-    - name: Deploy to EC2
-      uses: appleboy/ssh-action@master
-      with:
-        host: ${{ secrets.EC2_PUBLIC_IP }}  # Use your EC2 instance's public IP address here
-        username: ec2-user  # Adjust if your instance uses a different username
-        key: ${{ secrets.EC2_PRIVATE_KEY }}
-        port: 22
-        script: |
-          docker pull mishikabatra/my-image:latest
-          docker run -d -p 80:80 mishikabatra/my-image:latest
+      - name: Log in to Docker Hub
+        run: echo "${{ secrets.DOCKER_HUB_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_HUB_USERNAME }}" --password-stdin
+
+      - name: Build and push Docker image
+        run: |
+          SHA_SHORT=$(echo "${{ github.sha }}" | cut -c1-5)
+          IMAGE_NAME=mishikabatra/my-image:${SHA_SHORT}-${{ github.run_number }}
+          docker build . --file Dockerfile --tag $IMAGE_NAME
+          docker tag $IMAGE_NAME mishikabatra/my-image:latest
+          docker push $IMAGE_NAME
+          docker push mishikabatra/my-image:latest
+
+      - name: Deploy to EC2
+        env:
+          AWS_EC2_HOST: ${{ secrets.EC2_HOST }}
+          AWS_EC2_USER: ${{ secrets.EC2_USER }}
+          AWS_EC2_KEY: ${{ secrets.EC2_SSH_KEY }}
+        run: |
+          echo "$AWS_EC2_KEY" > ec2_key.pem
+          chmod 600 ec2_key.pem
+          ssh -o StrictHostKeyChecking=no -i ec2_key.pem $AWS_EC2_USER@$AWS_EC2_HOST << EOF
+            sudo docker login -u "${{ secrets.DOCKER_HUB_USERNAME }}" -p "${{ secrets.DOCKER_HUB_PASSWORD }}"
+            sudo tee docker-compose.yml > /dev/null << 'DOCKER_COMPOSE'
+            version: '3'
+            services:
+              web:
+                image: mishikabatra/my-image:latest
+                ports:
+                  - "8080:80"
+            DOCKER_COMPOSE
+            sudo docker-compose -f docker-compose.yml pull
+            sudo docker-compose -f docker-compose.yml down
+            sudo docker-compose -f docker-compose.yml up -d
+          EOF
