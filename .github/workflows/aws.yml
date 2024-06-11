@@ -1,0 +1,27 @@
+name: Deploy to EC2
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Build and push Docker image
+      # Add steps to build and push your Docker image to Docker Hub
+
+    - name: Deploy to EC2
+      uses: appleboy/ssh-action@master
+      with:
+        host: ${{ secrets.EC2_PUBLIC_IP }}  # Use your EC2 instance's public IP address here
+        username: ec2-user  # Adjust if your instance uses a different username
+        key: ${{ secrets.EC2_PRIVATE_KEY }}
+        port: 22
+        script: |
+          docker pull mishikabatra/my-image:latest
+          docker run -d -p 80:80 mishikabatra/my-image:latest
