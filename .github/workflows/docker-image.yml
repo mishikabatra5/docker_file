@@ -17,10 +17,14 @@ jobs:
       run: echo "${{ secrets.DOCKER_HUB_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_HUB_USERNAME }}" --password-stdin
 
     - name: Build the Docker image
-      run: docker build . --file Dockerfile --tag my-image:main
+      run: |
+        SHA_SHORT=$(echo "${{ github.sha }}" | cut -c1-7)
+        TAG_NAME=my-image:${SHA_SHORT}-${{ github.run_number }}
+        docker build . --file Dockerfile --tag $TAG_NAME
 
     - name: Tag and push the Docker image
       run: |
-        IMAGE_NAME=my-image:main
+        SHA_SHORT=$(echo "${{ github.sha }}" | cut -c1-7)
+        IMAGE_NAME=my-image:${SHA_SHORT}-${{ github.run_number }}
         docker tag $IMAGE_NAME mishikabatra/$IMAGE_NAME
         docker push mishikabatra/$IMAGE_NAME
