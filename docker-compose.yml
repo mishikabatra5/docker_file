@@ -3,4 +3,4 @@ services:
   web:
     image: mishikabatra/my-image:latest
     ports:
-      - "80:80"
+      - "8080:80"
