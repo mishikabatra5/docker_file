@@ -1,16 +1,14 @@
 name: Deploy to EC2 with Docker Compose
 
 on:
-  push:
-    branches: 
-      - main
   pull_request:
     types: [closed]
     branches:
       - main
 
 jobs:
-  build_and_deploy:
+  build_and_deploy: 
+    if: github.event.pull_request.merged == true
     runs-on: ubuntu-latest
 
     steps:
@@ -25,7 +23,6 @@ jobs:
 
       - name: Build and push Docker image
         id: build_image
-        if: github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.pull_request.merged == true)
         run: |
           SHA_SHORT=$(echo "${{ github.sha }}" | cut -c1-5)
           IMAGE_NAME=mishikabatra/my-image:${SHA_SHORT}-${{ github.run_number }}
@@ -34,11 +31,9 @@ jobs:
           echo "::set-output name=image_tag::${IMAGE_NAME}"
 
       - name: Placeholder command
-        if: github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.pull_request.merged == true)
         run: echo "This is a placeholder command"
 
       - name: Deploy to EC2
-        if: github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.pull_request.merged == true)
         env:
           AWS_EC2_HOST: ${{ secrets.EC2_HOST }}
           AWS_EC2_USER: ${{ secrets.EC2_USER }}
