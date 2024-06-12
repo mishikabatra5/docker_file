@@ -1,7 +1,7 @@
 version: '3'
 services:
   web:
-    image: mishikabatra/my-image:latest
+    image: mishikabatra/my-image:placeholder  # Placeholder to be replaced by the specific tag
     ports:
       - "9090:80"  # Adjusted port to 9090
     volumes:
