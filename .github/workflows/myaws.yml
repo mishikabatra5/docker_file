@@ -20,29 +20,28 @@ jobs:
         run: echo "${{ secrets.DOCKER_HUB_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_HUB_USERNAME }}" --password-stdin
 
       - name: Build and push Docker image
-        id: build
+        id: build_image
         run: |
           SHA_SHORT=$(echo "${{ github.sha }}" | cut -c1-5)
-          IMAGE_TAG=${SHA_SHORT}-${{ github.run_number }}
-          IMAGE_NAME=mishikabatra/my-image:${IMAGE_TAG}
+          IMAGE_NAME=mishikabatra/my-image:${SHA_SHORT}-${{ github.run_number }}
           docker build . --file Dockerfile --tag $IMAGE_NAME
           docker push $IMAGE_NAME
-          echo "::set-output name=image_tag::${IMAGE_TAG}"
+          echo "::set-output name=image_tag::${IMAGE_NAME}"
 
       - name: Deploy to EC2
         env:
           AWS_EC2_HOST: ${{ secrets.EC2_HOST }}
           AWS_EC2_USER: ${{ secrets.EC2_USER }}
           AWS_EC2_KEY: ${{ secrets.EC2_SSH_KEY }}
-          IMAGE_TAG: ${{ steps.build.outputs.image_tag }}
+          IMAGE_TAG: ${{ steps.build_image.outputs.image_tag }}
         run: |
           echo "$AWS_EC2_KEY" > ec2_key.pem
           chmod 600 ec2_key.pem
           scp -o StrictHostKeyChecking=no -i ec2_key.pem docker-compose.yml $AWS_EC2_USER@$AWS_EC2_HOST:~/docker-compose.yml
           ssh -o StrictHostKeyChecking=no -i ec2_key.pem $AWS_EC2_USER@$AWS_EC2_HOST << EOF
             sudo docker login -u "${{ secrets.DOCKER_HUB_USERNAME }}" -p "${{ secrets.DOCKER_HUB_PASSWORD }}"
-            sed -i "s/latest/$IMAGE_TAG/" ~/docker-compose.yml
+            sed -i "s|mishikabatra/my-image:placeholder|$IMAGE_TAG|" ~/docker-compose.yml
             sudo docker-compose -f ~/docker-compose.yml pull
             sudo docker-compose -f ~/docker-compose.yml down
             sudo docker-compose -f ~/docker-compose.yml up -d
-        EOF 
+          EOF
