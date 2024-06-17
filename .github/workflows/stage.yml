@@ -1,4 +1,4 @@
-name: Deploy to Staging
+name: Deploy to stage
 
 on:
   push:
@@ -9,16 +9,9 @@ jobs:
   trigger-build:
     runs-on: ubuntu-latest
 
-    steps:
-      - name: Trigger build and push to Docker Hub
-        env:
-          BRANCH: staging
-          REPO_NAME: mishikabatra
-          IMAGE_NAME: stage_image
-          DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
-          DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
-        run: |
-          curl -X POST \
-            -H "Accept: application/vnd.github.v3+json" \
-            https://api.github.com/repos/${{ github.repository }}/actions/workflows/build_image.yml/dispatches \
-            -d '{"ref":"staging", "inputs": {"branch": "staging", "repo_name": "mishikabatra", "image_name": "stage_image", "docker_username": "${DOCKER_USERNAME}", "docker_password": "${DOCKER_PASSWORD}"}}'
+    env:
+      REPO_BASE_NAME : mishikabatra
+      REPO_NAME: stage
+      BUILD_FOR_PRODUCTION: "/.github/workflows/build_image.yml"
+      DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+      DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
