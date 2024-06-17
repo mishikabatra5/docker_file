@@ -1,9 +1,9 @@
 name: Deploy to Staging
 
 on:
-  push: 
+  push:
     branches:
-      - staging 
+      - staging
 
 jobs:
   trigger-build:
@@ -18,4 +18,4 @@ jobs:
           BRANCH_NAME: staging
           DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
           DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
- 
+
