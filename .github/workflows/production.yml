@@ -8,7 +8,7 @@ on:
 jobs:
   trigger-build:
     runs-on: ubuntu-latest 
-
+ 
     steps:
       - name: Trigger build and push to Docker Hub
         uses: ./.github/workflows/build_image.yml
