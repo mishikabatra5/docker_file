@@ -1,0 +1,27 @@
+name: Deploy to Staging
+
+on:
+  push:
+    branches:
+      - staging
+
+jobs:
+  trigger-build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Trigger build and push
+        uses: actions/github-script@v4
+        with:
+          script: |
+            github.actions.createWorkflowDispatch({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              workflow_id: 'build_image.yml',
+              ref: 'staging',
+              inputs: {
+                branch: 'staging',
+                repo_name: 'mishikabatra',
+                image_name: 'my-stage-image'
+              }
+            })
