@@ -7,7 +7,7 @@ on:
 
 jobs:
   trigger-build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-latest 
 
     steps:
       - name: Trigger build and push to Docker Hub
