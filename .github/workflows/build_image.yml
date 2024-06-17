@@ -1,21 +1,21 @@
 name: Build and Push Docker Image
- 
+
 on:
   repository_dispatch:
-    types: [build-and-push]
+    types: [build-push]
 
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Check out repository
+      - name: Checkout repository
         uses: actions/checkout@v2
 
       - name: Login to Docker Hub
-        run: echo "${{ inputs.docker_password }}" | docker login -u "${{ inputs.docker_username }}" --password-stdin
+        run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
 
       - name: Build and push Docker image
         run: |
-          docker build -t ${{ inputs.repo_name }}/${{ inputs.image_name }}:${{ github.sha }} .
-          docker push ${{ inputs.repo_name }}/${{ inputs.image_name }}:${{ github.sha }}
+          docker build -t "${{ inputs.repo_base_name }}/${{ inputs.repo_name }}:${{ github.sha }}" .
+          docker push "${{ inputs.repo_base_name }}/${{ inputs.repo_name }}:${{ github.sha }}"
