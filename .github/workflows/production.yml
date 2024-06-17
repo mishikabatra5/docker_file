@@ -3,25 +3,18 @@ name: Deploy to Production
 on:
   push:
     branches:
-      - production
+      - production 
 
 jobs:
   trigger-build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-latest 
 
     steps:
-      - name: Trigger build and push
-        uses: actions/github-script@v4
+      - name: Trigger build and push to Docker Hub
+        uses: ./.github/workflows/build_image.yml
         with:
-          script: |
-            github.actions.createWorkflowDispatch({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              workflow_id: 'build_image.yml',
-              ref: 'production',
-              inputs: {
-                branch: 'production',
-                repo_name: 'mishikabatra',
-                image_name: 'my-production-image'
-              }
-            })
+          REPO_NAME: production
+          REPO_BASE_NAME: mishikabatra
+          BRANCH_NAME: production
+          DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+          DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
