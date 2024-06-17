@@ -6,7 +6,7 @@ on:
       - staging
 
 jobs:
-  trigger-build:
+  trigger-build: 
     runs-on: ubuntu-latest
 
     steps:
